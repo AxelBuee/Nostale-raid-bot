@@ -42,7 +42,23 @@ class RaidView(discord.ui.View):
         left = self.raid.remove_participant(interaction.user)
         if left:
             await interaction.response.send_message("You left the raid", ephemeral=True)
+            embed = self.raid.to_embed()
+            await interaction.message.edit(embed=embed)
         else:
             await interaction.response.send_message(
                 "You were not part of the raid", ephemeral=True
             )
+
+    @discord.ui.button(label="Notify", style=discord.ButtonStyle.blurple)
+    async def notify_button(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
+        if interaction.user != self.raid.author:
+            await interaction.response.send_message(
+                "Only the author can do this", ephemeral=True
+            )
+            return
+        await interaction.response.defer()
+        for participant in self.raid.participants:
+            dm_channel = await participant.create_dm()
+            await dm_channel.send("Raid is about to start")

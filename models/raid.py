@@ -6,18 +6,18 @@ from typing import List
 class Raid:
     def __init__(
         self,
-        author=None,
+        author,
         raid_name="Kiro",
         start_datetime=datetime.datetime.today(),
         max_participants=2,
         message=None,
     ):
-        self.author: Member | None = (author,)
+        self.author: Member = author
         self.raid_name: str = raid_name
         self.start_datetime: datetime.datetime = start_datetime
         self.message = message
         self.max_participants: int = max_participants
-        self.participants = []
+        self.participants: List[User] = []
 
     def __str__(self):
         header = f"Session {self.raid_name}! \n Starting at : {self.start_datetime} \n {len(self.participants)}/{self.max_participants}"
@@ -31,7 +31,6 @@ class Raid:
             len(self.participants) < self.max_participants
             and user not in self.participants
         ):
-            print("PARTICIPANT ADDED")
             self.participants.append(user)
             return True
         return False
@@ -50,7 +49,7 @@ class Raid:
 
     def to_embed(self) -> Embed:
         embed = Embed(title=f"{self.raid_name} Raid", colour=Colour.dark_teal())
-        embed.set_author(name=self.author[0].name)
+        embed.set_author(name=self.author.name)
         embed.add_field(
             name="Date", value=self.start_datetime.strftime("%Y-%m-%d %H:%M:%S")
         )

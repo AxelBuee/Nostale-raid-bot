@@ -143,7 +143,10 @@ async def view(interaction: discord.Interaction):
     await interaction.response.send_message(f"Creating raid", ephemeral=True)
     raid = Raid(author=interaction.user)
     view = RaidView(raid=raid)
-    await interaction.channel.send(embed=raid.to_embed(), view=view)
+    role = discord.utils.get(interaction.channel.guild.roles, name="Raideur")
+    await interaction.channel.send(
+        content=role.mention, embed=raid.to_embed(), view=view
+    )
 
 
 bot.run(os.getenv("BOT_TOKEN"))
