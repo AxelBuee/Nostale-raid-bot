@@ -1,4 +1,4 @@
-from discord import User, Embed, Colour, Member
+from discord import User, Embed, Colour, Member, PartialEmoji
 import datetime
 from typing import List
 
@@ -49,15 +49,18 @@ class Raid:
 
     def to_embed(self) -> Embed:
         embed = Embed(title=f"{self.raid_name} Raid", colour=Colour.dark_teal())
+        bench_emoji = PartialEmoji(name="boss_a7_kirollas", id=1098302563520102471)
+        embed.set_thumbnail(url=bench_emoji.url)
         embed.set_author(name=self.author.name)
         embed.add_field(
             name="Date", value=self.start_datetime.strftime("%Y-%m-%d %H:%M:%S")
         )
         embed.add_field(
-            name="Participants", value=self.get_participant_list_pretty_print()
+            name=f"Participants ({len(self.participants)}/{self.max_participants}):",
+            value=self.get_participant_list_pprint(),
+            inline=False,
         )
         return embed
 
-    def get_participant_list_pretty_print(self):
-        participants = "\n".join(member.mention for member in self.participants)
-        return f"Participants for {self.raid_name} ({len(self.participants)}/{self.max_participants}):\n{participants}"
+    def get_participant_list_pprint(self):
+        return "\n".join(member.mention for member in self.participants)

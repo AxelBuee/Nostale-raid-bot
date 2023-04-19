@@ -56,7 +56,7 @@ async def on_ready():
 
 @bot.event
 async def on_reaction_add(reaction: discord.Reaction, user: discord.User):
-    print("ADD REACTION")
+
     raid = raids.get(reaction.message.id)
     if raid is None or user.bot:
         return
@@ -64,7 +64,7 @@ async def on_reaction_add(reaction: discord.Reaction, user: discord.User):
     if message.author != bot.user:
         return
     if str(reaction.emoji) == "✅":
-        # Add user to participants list
+        print("ADD REACTION")
         raid.add_participant(user)
         embed = raid.to_embed()
         await message.edit(embed=embed)
@@ -72,11 +72,11 @@ async def on_reaction_add(reaction: discord.Reaction, user: discord.User):
 
 @bot.event
 async def on_reaction_remove(reaction: discord.Reaction, user: discord.User):
-    print("REMOVED REACTION")
     if user.bot:
         return
     raid = raids.get(reaction.message.id)
     if raid is not None:
+        print("REMOVED REACTION")
         message = reaction.message
         raid.remove_participant(user)
         await message.edit(content=str(raid))
@@ -141,12 +141,18 @@ async def start_raid(
 @bot.tree.command(name="view")
 async def view(interaction: discord.Interaction):
     await interaction.response.send_message(f"Creating raid", ephemeral=True)
-    raid = Raid(author=interaction.user)
-    view = RaidView(raid=raid)
+    new_raid = Raid(author=interaction.user)
+    view = RaidView(raid=new_raid)
     role = discord.utils.get(interaction.channel.guild.roles, name="Raideur")
-    await interaction.channel.send(
-        content=role.mention, embed=raid.to_embed(), view=view
+    message = await interaction.channel.send(
+        content=role.mention, embed=new_raid.to_embed(), view=view
     )
+    new_raid.message = message
+    raids[message.id] = new_raid
+    await message.add_reaction("⚔️")
+    await message.add_reaction("🏹")
+    await message.add_reaction("🪄")  # Wand emoji
+    await message.add_reaction("🤜")
 
 
 bot.run(os.getenv("BOT_TOKEN"))
