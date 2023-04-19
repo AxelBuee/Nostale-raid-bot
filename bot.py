@@ -3,11 +3,9 @@ from discord import app_commands, ui
 from discord.ext import commands
 from models.raid import Raid
 from raid_view import RaidView
-from datetime import datetime, date, time
-from typing import Tuple
+from datetime import datetime
 import os
 from dotenv import load_dotenv
-import asyncio
 
 load_dotenv()
 # intents = discord.Intents(messages=True, reactions=True, guilds=True, members=True, presences=True, voice_states=True, typing=True, bans=True, emojis=True, integrations=True, webhooks=True, invites=True, voice_states=True, dm_typing=True, guild_typing=True, reactions=True, guild_reactions=True, messages=True, guild_messages=True, dm_messages=True, guild_typing=True, dm_typing=True, presences=True, guild_presences=True)
@@ -63,23 +61,29 @@ async def on_reaction_add(reaction: discord.Reaction, user: discord.User):
     message = reaction.message
     if message.author != bot.user:
         return
-    if str(reaction.emoji) == "✅":
-        print("ADD REACTION")
-        raid.add_participant(user)
+    if str(reaction.emoji) in "⚔️🏹🪄🤜":
+        current_emoji = raid.get_participant_emoji(user)
+        if current_emoji:
+            raid.set_participant_emoji(user, str(reaction.emoji))
+            await message.remove_reaction(current_emoji, user)
+            # await previous_reaction.users.remove(user)
+        else:
+            raid.add_participant(user, str(reaction.emoji))
         embed = raid.to_embed()
         await message.edit(embed=embed)
 
 
 @bot.event
 async def on_reaction_remove(reaction: discord.Reaction, user: discord.User):
-    if user.bot:
+    raid = raids.get(reaction.message.id)
+    if user.bot or raid.get_participant_emoji(user) != str(reaction.emoji):
         return
     raid = raids.get(reaction.message.id)
     if raid is not None:
         print("REMOVED REACTION")
         message = reaction.message
         raid.remove_participant(user)
-        await message.edit(content=str(raid))
+        await message.edit(embed=raid.to_embed())
 
 
 @bot.tree.command(name="clear")
@@ -118,7 +122,7 @@ async def start_raid(
     raid_name: str,
     start_date: str,
     start_time: str,
-    max_participants: int,
+    max_participants: int | None = None,
 ):
     start_date_obj = datetime.fromisoformat(start_date).date()
     start_time_obj = datetime.strptime(start_time, "%H:%M").time()
