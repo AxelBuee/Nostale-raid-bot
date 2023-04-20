@@ -6,6 +6,7 @@ from raid_view import RaidView
 from datetime import datetime
 import os
 from dotenv import load_dotenv
+from db import connect_to_db
 
 load_dotenv()
 # intents = discord.Intents(messages=True, reactions=True, guilds=True, members=True, presences=True, voice_states=True, typing=True, bans=True, emojis=True, integrations=True, webhooks=True, invites=True, voice_states=True, dm_typing=True, guild_typing=True, reactions=True, guild_reactions=True, messages=True, guild_messages=True, dm_messages=True, guild_typing=True, dm_typing=True, presences=True, guild_presences=True)
@@ -50,6 +51,7 @@ async def on_ready():
         print(f"Synced {len(synced)} command(s)")
     except Exception as e:
         print(e)
+    connect_to_db()
 
 
 @bot.event
@@ -64,9 +66,8 @@ async def on_reaction_add(reaction: discord.Reaction, user: discord.User):
     if str(reaction.emoji) in "⚔️🏹🪄🤜":
         current_emoji = raid.get_participant_emoji(user)
         if current_emoji:
-            raid.set_participant_emoji(user, str(reaction.emoji))
+            raid.participants[user]["reaction_emoji"] = str(reaction.emoji)
             await message.remove_reaction(current_emoji, user)
-            # await previous_reaction.users.remove(user)
         else:
             raid.add_participant(user, str(reaction.emoji))
         embed = raid.to_embed()
