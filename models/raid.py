@@ -1,18 +1,19 @@
-from discord import User, Embed, Colour, Member, PartialEmoji
+from discord import User, Embed, Colour, PartialEmoji
 import datetime
-from typing import List, Any
+from typing import Any
 from babel.dates import format_date, format_time, get_timezone
+from db import RaidSQL
 
 
 class Raid:
     def __init__(
         self,
-        author: Member,
+        author: User,
         raid_name="Kiro",
         start_datetime=datetime.datetime(
             year=2023,
             month=4,
-            day=19,
+            day=23,
             hour=23,
             minute=10,
             tzinfo=get_timezone("Europe/Paris"),
@@ -21,20 +22,17 @@ class Raid:
         message=None,
         participants=None,
     ):
-        self.author: Member = author
+        self.author: User = author
         self.raid_name: str = raid_name
         self.start_datetime: datetime.datetime = start_datetime
         self.message = message
         self.max_participants: int = max_participants
-        self.participants: dict[User, dict[str, Any]] = {}
+        self.participants: dict[User, dict[str, Any]] = participants
 
     def __str__(self):
-        header = f"Session {self.raid_name}! \n Starting at : {self.start_datetime} \n {len(self.participants)}/{self.max_participants}"
-        participants = "\n".join(
-            participant.mention for participant in self.participants
-        )
-        header += f":\n{participants}"
-        return header
+        str_raid = f"Session {self.raid_name}! \n Starting at : {self.start_datetime} \n Participants ({len(self.participants)}/{self.max_participants}):"
+        str_raid += f"\n{self.get_participant_list_pprint()}"
+        return str_raid
 
     def add_participant(self, user: User, reaction_emoji: str):
         if (
@@ -45,20 +43,14 @@ class Raid:
             return True
         return False
 
-    def get_participant_emoji(self, user: User):
-        return self.participants.get(user, {}).get("reaction_emoji")
-
     def remove_participant(self, user: User):
         if user in self.participants:
             del self.participants[user]
             return True
         return False
 
-    def check_timeout(self):
-        if datetime.datetime.now() > self.start_time + datetime.timedelta(minutes=30):
-            return True
-        else:
-            return False
+    def get_participant_emoji(self, user: User):
+        return self.participants.get(user, {}).get("reaction_emoji")
 
     def to_embed(self) -> Embed:
         embed = Embed(title=f"{self.raid_name} Raid", colour=Colour.dark_teal())
@@ -91,4 +83,20 @@ class Raid:
         return "\n".join(
             f"{reactions['reaction_emoji']} {participant.mention}"
             for participant, reactions in self.participants.items()
+        )
+
+    def get_serialized_participants(self):
+        serialized = {}
+        for user, data in self.participants.items():
+            serialized[user.id] = data
+        return serialized
+
+    def to_raid_sql(self):
+        return RaidSQL(
+            self.author.id,
+            raid_name=self.raid_name,
+            start_datetime=self.start_datetime,
+            max_participants=self.max_participants,
+            message_id=self.message.id,
+            participants=self.get_serialized_participants(),
         )

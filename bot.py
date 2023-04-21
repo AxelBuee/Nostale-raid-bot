@@ -1,12 +1,14 @@
 import discord
-from discord import app_commands, ui
+from discord import app_commands
 from discord.ext import commands
 from models.raid import Raid
-from raid_view import RaidView
+from views.raid_view import RaidView
 from datetime import datetime
 import os
 from dotenv import load_dotenv
-from db import connect_to_db
+from db import get_session, RaidSQL
+import asyncio
+from typing import List
 
 load_dotenv()
 # intents = discord.Intents(messages=True, reactions=True, guilds=True, members=True, presences=True, voice_states=True, typing=True, bans=True, emojis=True, integrations=True, webhooks=True, invites=True, voice_states=True, dm_typing=True, guild_typing=True, reactions=True, guild_reactions=True, messages=True, guild_messages=True, dm_messages=True, guild_typing=True, dm_typing=True, presences=True, guild_presences=True)
@@ -17,32 +19,6 @@ bot = commands.Bot(command_prefix="!", help_command=None, intents=intents)
 raids: dict[int, Raid] = {}
 
 
-class RaidModal(ui.Modal, title="Send us your feedback"):
-    raid_name = ui.TextInput(label="raid name")
-    # raid_name = ui.Select(placeholder="Select a raid", options=[
-    #     discord.SelectOption(label="Erenia"),
-    #     discord.SelectOption(label="Zenas")
-    # ])
-
-    async def on_submit(self, interaction: discord.Interaction):
-        channel = interaction.guild.get_channel(os.getenv("GENERAL_CH_ID"))
-
-        embed = discord.Embed(
-            title=self.raid_name.value,
-            description="New mara raid !",
-            color=discord.Color.yellow(),
-        )
-        embed.set_author(name=interaction.user, icon_url=interaction.user.avatar)
-
-        await channel.send(embed=embed)
-        await interaction.response.send_message(
-            f"Thank you, {interaction.user.name}", ephemeral=True
-        )
-
-    async def on_error(self, interaction: discord.Interaction, error: Exception):
-        print(error)
-
-
 @bot.event
 async def on_ready():
     print("Bot is up and ready !")
@@ -51,38 +27,40 @@ async def on_ready():
         print(f"Synced {len(synced)} command(s)")
     except Exception as e:
         print(e)
-    connect_to_db()
+    session = get_session()
+    session.close()
 
 
 @bot.event
-async def on_reaction_add(reaction: discord.Reaction, user: discord.User):
-
-    raid = raids.get(reaction.message.id)
+async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
+    raid = raids.get(payload.message_id)
+    user = await bot.fetch_user(payload.user_id)
     if raid is None or user.bot:
         return
-    message = reaction.message
+    channel = await bot.fetch_channel(payload.channel_id)
+    message = await channel.fetch_message(payload.message_id)
     if message.author != bot.user:
         return
-    if str(reaction.emoji) in "⚔️🏹🪄🤜":
+    if str(payload.emoji) in "⚔️🏹🪄🤜":
         current_emoji = raid.get_participant_emoji(user)
         if current_emoji:
-            raid.participants[user]["reaction_emoji"] = str(reaction.emoji)
+            raid.participants[user]["reaction_emoji"] = str(payload.emoji)
             await message.remove_reaction(current_emoji, user)
         else:
-            raid.add_participant(user, str(reaction.emoji))
+            raid.add_participant(user, str(payload.emoji))
         embed = raid.to_embed()
         await message.edit(embed=embed)
 
 
 @bot.event
-async def on_reaction_remove(reaction: discord.Reaction, user: discord.User):
-    raid = raids.get(reaction.message.id)
-    if user.bot or raid.get_participant_emoji(user) != str(reaction.emoji):
+async def on_raw_reaction_remove(payload: discord.RawReactionActionEvent):
+    user = await bot.fetch_user(payload.user_id)
+    raid = raids.get(payload.message_id)
+    if not raid or user.bot or raid.get_participant_emoji(user) != str(payload.emoji):
         return
-    raid = raids.get(reaction.message.id)
     if raid is not None:
-        print("REMOVED REACTION")
-        message = reaction.message
+        channel = await bot.fetch_channel(payload.channel_id)
+        message = await channel.fetch_message(payload.message_id)
         raid.remove_participant(user)
         await message.edit(embed=raid.to_embed())
 
@@ -91,6 +69,7 @@ async def on_reaction_remove(reaction: discord.Reaction, user: discord.User):
 @app_commands.describe(nb_of_messages_to_delete="Number of messages to delete")
 async def clear(interaction: discord.Interaction, nb_of_messages_to_delete: int):
     """Clear a specified number of messages in the channel."""
+    # TODO: Add user role check
     if nb_of_messages_to_delete <= 0:
         await interaction.response.send_message(
             "Please enter a positive integer.", ephemeral=True
@@ -140,7 +119,11 @@ async def start_raid(
     new_raid.message = message
     raids[message.id] = new_raid
     bench_emoji = discord.PartialEmoji(name="bench", id=1097864481461260369)
-    await message.add_reaction(bench_emoji)
+    await message.add_reaction("⚔️")
+    await message.add_reaction("🏹")
+    await message.add_reaction("🪄")  # Wand emoji
+    await message.add_reaction("🤜")
+    await interaction.edit_original_response(content="Raid fully created")
 
 
 @bot.tree.command(name="view")
@@ -158,6 +141,35 @@ async def view(interaction: discord.Interaction):
     await message.add_reaction("🏹")
     await message.add_reaction("🪄")  # Wand emoji
     await message.add_reaction("🤜")
+
+
+@bot.tree.command(name="store")
+async def store(interaction: discord.Interaction):
+    await interaction.response.send_message(f"Storing raids", ephemeral=True)
+    session = get_session()
+    for message_id, raid in raids.items():
+        raid_sql = raid.to_raid_sql()
+        session.merge(raid_sql)
+        session.commit()
+    session.close()
+    await interaction.edit_original_response(content="Raids stored")
+
+
+@bot.tree.command(name="load")
+async def load(interaction: discord.Interaction):
+    await interaction.response.send_message(f"Loading raids", ephemeral=True)
+    session = get_session()
+    today_end = datetime.combine(datetime.today(), datetime.max.time())
+    raids_sql = session.query(RaidSQL).filter(RaidSQL.start_datetime <= today_end).all()
+    to_raid_tasks = [raid_sql.to_raid(bot=bot) for raid_sql in raids_sql]
+    raids_list: List[Raid] = await asyncio.gather(*to_raid_tasks)
+    for raid in raids_list:
+        if raids.get(raid.message.id) is None:
+            raids[raid.message.id] = raid
+        else:
+            print(f"Raid {raid.message.id} already loaded")
+    await interaction.edit_original_response(content=f"{len(raids_list)} raids loaded")
+    session.close()
 
 
 bot.run(os.getenv("BOT_TOKEN"))
