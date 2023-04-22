@@ -1,4 +1,4 @@
-from discord import User, Embed, Colour, PartialEmoji
+from discord import User, Embed, Colour, PartialEmoji, Message
 import datetime
 from typing import Any
 from babel.dates import format_date, format_time, get_timezone
@@ -19,7 +19,7 @@ class Raid:
             tzinfo=get_timezone("Europe/Paris"),
         ),
         max_participants=2,
-        message=None,
+        message: Message | None = None,
         participants=None,
     ):
         self.author: User = author
