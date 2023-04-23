@@ -27,7 +27,7 @@ def update_raid_in_db(raid: Raid):
     logger.info(f"Saved {raid} into database")
 
 
-def generate_raids_dict(raids_list: List[Raid]):
+def generate_raids_dict(raids_list: List[Raid]) -> dict[int, Raid]:
     raids = {}
     for raid in raids_list:
         raids[raid.message.id] = raid

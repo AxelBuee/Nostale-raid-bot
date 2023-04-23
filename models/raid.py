@@ -8,6 +8,7 @@ from db import RaidSQL
 class Raid:
     def __init__(
         self,
+        message: Message,
         author: User,
         raid_name="Kiro",
         start_datetime=datetime.datetime(
@@ -19,8 +20,8 @@ class Raid:
             tzinfo=get_timezone("Europe/Paris"),
         ),
         max_participants=2,
-        message: Message | None = None,
         participants=None,
+        nb_of_raids=0,
     ):
         self.author: User = author
         self.raid_name: str = raid_name
@@ -28,6 +29,7 @@ class Raid:
         self.message = message
         self.max_participants: int = max_participants
         self.participants: dict[User, dict[str, Any]] = participants
+        self.nb_of_raids: int = nb_of_raids
 
     def __str__(self):
         str_raid = f"Session {self.raid_name}! \n Starting at : {self.start_datetime} \n Participants ({len(self.participants)}/{self.max_participants}):"
@@ -54,8 +56,8 @@ class Raid:
 
     def to_embed(self) -> Embed:
         embed = Embed(title=f"{self.raid_name} Raid", colour=Colour.dark_teal())
-        raid_boss_emoji = PartialEmoji(name="boss_a7_kirollas", id=1098302563520102471)
-        embed.set_thumbnail(url=raid_boss_emoji.url)
+        # raid_boss_emoji = PartialEmoji(name="boss_a7_kirollas", id=1098302563520102471)
+        # embed.set_thumbnail(url=raid_boss_emoji.url)
         embed.set_author(name=self.author.name)
         embed.add_field(
             name="Date",
@@ -77,6 +79,8 @@ class Raid:
             inline=False,
         )
         embed.add_field(name="Voc", value="<#688757693850452065>")
+        if self.nb_of_raids != 0:
+            embed.add_field(name="Result", value=f"{self.nb_of_raids} raids")
         return embed
 
     def get_participant_list_pprint(self):
@@ -99,4 +103,5 @@ class Raid:
             max_participants=self.max_participants,
             message_id=self.message.id,
             participants=self.get_serialized_participants(),
+            nb_of_raids=self.nb_of_raids,
         )

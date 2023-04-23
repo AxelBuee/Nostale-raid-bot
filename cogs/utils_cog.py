@@ -11,9 +11,15 @@ class UtilsCog(commands.Cog):
 
     @app_commands.command(name="clear")
     @app_commands.checks.has_role("Assistant/Gardien")
-    @app_commands.describe(nb_of_messages_to_delete="Number of messages to delete")
+    @app_commands.describe(
+        nb_of_messages_to_delete="Number of messages to delete",
+        delete_threads="Delete associated threads ?",
+    )
     async def clear(
-        self, interaction: discord.Interaction, nb_of_messages_to_delete: int
+        self,
+        interaction: discord.Interaction,
+        nb_of_messages_to_delete: int,
+        delete_threads: str | None = None,
     ):
         """Clear a specified number of messages in the channel."""
         if nb_of_messages_to_delete <= 0:
@@ -23,9 +29,19 @@ class UtilsCog(commands.Cog):
             return
         try:
             await interaction.response.defer(ephemeral=True)
-            deleted = await interaction.channel.purge(limit=nb_of_messages_to_delete)
+            deleted_msg = await interaction.channel.purge(
+                limit=nb_of_messages_to_delete
+            )
+            nb_deleted_threads = 0
+            if delete_threads:
+                for msg in deleted_msg:
+                    thread = interaction.channel.get_thread(msg.id)
+                    if thread:
+                        await thread.delete()
+                        nb_deleted_threads += 1
             await interaction.followup.send(
-                f"Successfully cleared {len(deleted)} messages.", ephemeral=True
+                f"Successfully cleared {len(deleted_msg)} messages and {nb_deleted_threads} threads.",
+                ephemeral=True,
             )
         except discord.Forbidden:
             await interaction.followup.send(

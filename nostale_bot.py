@@ -10,7 +10,7 @@ class NostaleRaidHelperBot(commands.Bot):
     def __init__(self):
         super().__init__(command_prefix="!", intents=discord.Intents.all())
 
-        self.cog_list = ["cogs.raid_cog"]  # "cogs.utils_cog"
+        self.cog_list = ["cogs.raid_cog", "cogs.utils_cog"]
         self.raids: dict[int, Raid] = {}
 
     async def setup_hook(self):
@@ -28,6 +28,7 @@ class NostaleRaidHelperBot(commands.Bot):
             logger.critical(e)
         raids_list = await load_raids_from_db(bot=self)
         self.raids = generate_raids_dict(raids_list)
+        print(self.raids)
 
 
 # intents = discord.Intents(messages=True, reactions=True, guilds=True, members=True, presences=True, voice_states=True, typing=True, bans=True, emojis=True, integrations=True, webhooks=True, invites=True, voice_states=True, dm_typing=True, guild_typing=True, reactions=True, guild_reactions=True, messages=True, guild_messages=True, dm_messages=True, guild_typing=True, dm_typing=True, presences=True, guild_presences=True)

@@ -43,6 +43,7 @@ class RaidSQL(Base):
     start_datetime = Column(DateTime(timezone=True))
     max_participants = Column(Integer)
     participants = Column(JSON)
+    nb_of_raids = Column(Integer)
 
     def __init__(
         self,
@@ -52,6 +53,7 @@ class RaidSQL(Base):
         max_participants,
         message_id,
         participants,
+        nb_of_raids,
     ):
         self.author_id: int = author_id
         self.raid_name: str = raid_name
@@ -59,6 +61,7 @@ class RaidSQL(Base):
         self.message_id = message_id
         self.max_participants: int = max_participants
         self.participants: dict[int, dict[str, Any]] = participants
+        self.nb_of_raids: int = nb_of_raids
 
     async def get_message(self, bot: commands.Bot) -> Message:
         channel_id = os.getenv("GENERAL_CH_ID")
@@ -87,5 +90,6 @@ class RaidSQL(Base):
             max_participants=self.max_participants,
             message=message,
             participants=participants,
+            nb_of_raids=self.nb_of_raids,
         )
         return raid
