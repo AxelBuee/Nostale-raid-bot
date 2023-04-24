@@ -119,6 +119,7 @@ class RaidCog(commands.Cog):
             raid_name=raid_name,
             author=interaction.user,
             guild_id=interaction.guild_id,
+            channel_id=interaction.channel_id,
             start_datetime=tz.localize(
                 datetime.combine(start_date_obj, start_time_obj)
             ),

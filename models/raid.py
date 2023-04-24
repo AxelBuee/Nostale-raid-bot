@@ -15,6 +15,7 @@ class Raid:
         raid_name: str,
         author: Member,
         guild_id: int,
+        channel_id: int,
         start_datetime: datetime,
         duration=1,
         max_participants=2,
@@ -30,6 +31,7 @@ class Raid:
         self.participants: dict[Member, dict[str, Any]] = participants
         self.nb_of_raids: int = nb_of_raids
         self.guild_id: int = guild_id
+        self.channel_id: int = channel_id
 
     def __str__(self):
         str_raid = f"Session {self.raid_name}! \n Starting at : {self.start_datetime} \n Participants ({len(self.participants)}/{self.max_participants}):"
@@ -114,4 +116,5 @@ class Raid:
             participants=self.get_serialized_participants(),
             nb_of_raids=self.nb_of_raids,
             guild_id=self.guild_id,
+            channel_id=self.channel_id,
         )
