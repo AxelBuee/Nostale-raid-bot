@@ -1,8 +1,8 @@
 import os
-from nostale_bot import NostaleRaidHelperBot
 
 from dotenv import load_dotenv
 
+from nostale_bot import NostaleRaidHelperBot
 
 load_dotenv()
 

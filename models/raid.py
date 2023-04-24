@@ -1,42 +1,42 @@
-from discord import User, Embed, Colour, PartialEmoji, Message
-import datetime
-from typing import Any
-from babel.dates import format_date, format_time, get_timezone
+from datetime import datetime, timedelta
+from typing import Any, List
+
+from babel.dates import format_date, format_time
+from discord import Colour, Embed, Emoji, Member, Message
+
 from db import RaidSQL
+from templates.templates import RAID_TEMPLATES
 
 
 class Raid:
     def __init__(
         self,
         message: Message,
-        author: User,
-        raid_name="Kiro",
-        start_datetime=datetime.datetime(
-            year=2023,
-            month=4,
-            day=23,
-            hour=23,
-            minute=10,
-            tzinfo=get_timezone("Europe/Paris"),
-        ),
+        raid_name: str,
+        author: Member,
+        guild_id: int,
+        start_datetime: datetime,
+        duration=1,
         max_participants=2,
         participants=None,
         nb_of_raids=0,
     ):
-        self.author: User = author
+        self.author: Member = author
         self.raid_name: str = raid_name
-        self.start_datetime: datetime.datetime = start_datetime
+        self.start_datetime: datetime = start_datetime
+        self.duration: int = duration
         self.message = message
         self.max_participants: int = max_participants
-        self.participants: dict[User, dict[str, Any]] = participants
+        self.participants: dict[Member, dict[str, Any]] = participants
         self.nb_of_raids: int = nb_of_raids
+        self.guild_id: int = guild_id
 
     def __str__(self):
         str_raid = f"Session {self.raid_name}! \n Starting at : {self.start_datetime} \n Participants ({len(self.participants)}/{self.max_participants}):"
         str_raid += f"\n{self.get_participant_list_pprint()}"
         return str_raid
 
-    def add_participant(self, user: User, reaction_emoji: str):
+    def add_participant(self, user: Member, reaction_emoji: str):
         if (
             len(self.participants) < self.max_participants
             and user not in self.participants
@@ -45,20 +45,27 @@ class Raid:
             return True
         return False
 
-    def remove_participant(self, user: User):
+    def remove_participant(self, user: Member):
         if user in self.participants:
             del self.participants[user]
             return True
         return False
 
-    def get_participant_emoji(self, user: User):
+    def get_participant_emoji(self, user: Member):
         return self.participants.get(user, {}).get("reaction_emoji")
 
-    def to_embed(self) -> Embed:
-        embed = Embed(title=f"{self.raid_name} Raid", colour=Colour.dark_teal())
-        # raid_boss_emoji = PartialEmoji(name="boss_a7_kirollas", id=1098302563520102471)
-        # embed.set_thumbnail(url=raid_boss_emoji.url)
+    def to_embed(self, guild_emojis: List[Emoji]) -> Embed:
+        embed = Embed(
+            title=f"Session {self.raid_name}",
+            colour=Colour.from_rgb(*RAID_TEMPLATES[self.raid_name]["colour"]),
+        )
         embed.set_author(name=self.author.name)
+        thumbnail = next(
+            (emoji for emoji in guild_emojis if self.raid_name.lower() in emoji.name),
+            None,
+        )
+        if thumbnail:
+            embed.set_thumbnail(url=thumbnail.url)
         embed.add_field(
             name="Date",
             value="`"
@@ -69,16 +76,17 @@ class Raid:
         )
         embed.add_field(
             name="Heure",
-            value="`"
-            + format_time(self.start_datetime.time(), format="short", locale="fr_FR")
-            + "`",
+            value=(
+                f"`{format_time(self.start_datetime.time(), format='short', locale='fr_FR')}` - "
+                f"`{format_time((self.start_datetime + timedelta(hours=self.duration)).time(), format='short', locale='fr_FR')}`"
+            ),
         )
         embed.add_field(
             name=f"Participants ({len(self.participants)}/{self.max_participants}):",
             value=self.get_participant_list_pprint(),
             inline=False,
         )
-        embed.add_field(name="Voc", value="<#688757693850452065>")
+        embed.add_field(name="Voc", value="<#766229388479823902>")
         if self.nb_of_raids != 0:
             embed.add_field(name="Result", value=f"{self.nb_of_raids} raids")
         return embed
@@ -100,8 +108,10 @@ class Raid:
             self.author.id,
             raid_name=self.raid_name,
             start_datetime=self.start_datetime,
+            duration=self.duration,
             max_participants=self.max_participants,
             message_id=self.message.id,
             participants=self.get_serialized_participants(),
             nb_of_raids=self.nb_of_raids,
+            guild_id=self.guild_id,
         )
