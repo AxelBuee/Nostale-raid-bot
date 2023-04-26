@@ -42,6 +42,8 @@ class RaidCog(commands.Cog):
                 await message.remove_reaction(current_emoji, user)
             else:
                 raid.add_participant(user, str(payload.emoji))
+                thread = channel.get_thread(message.id)
+                await thread.add_user(user)
             embed = raid.to_embed(self.bot.emoji_dict.get(payload.guild_id, []))
             await message.edit(embed=embed)
             update_raid_in_db(raid)
@@ -64,6 +66,8 @@ class RaidCog(commands.Cog):
             channel = await self.bot.fetch_channel(payload.channel_id)
             message = await channel.fetch_message(payload.message_id)
             raid.remove_participant(user)
+            thread = channel.get_thread(message.id)
+            await thread.remove_user(user)
             await message.edit(
                 embed=raid.to_embed(self.bot.emoji_dict.get(payload.guild_id, []))
             )
@@ -171,6 +175,7 @@ class RaidCog(commands.Cog):
                         raid.get_participant_emoji(user), user
                     )
                     raid.remove_participant(user)
+                    await interaction.channel.remove_user(user)
                     await interaction.edit_original_response(
                         content=f"{user.name} removed from raid"
                     )
@@ -230,7 +235,7 @@ class RaidCog(commands.Cog):
                 return
             else:
                 raid.add_participant(user=user_to_add, reaction_emoji=reaction)
-
+                await interaction.channel.add_user(user_to_add)
                 update_raid_in_db(raid)
                 await interaction.followup.send(
                     content=f"Player {user_to_add} was added to the raid."

@@ -18,7 +18,12 @@ async def load_raids_from_db(bot: commands.Bot):
     raids_sql = (
         session.query(RaidSQL).filter(RaidSQL.start_datetime >= today_start).all()
     )
-    to_raid_tasks = [raid_sql.to_raid(bot=bot) for raid_sql in raids_sql]
+    bot_guild_ids = [guild.id for guild in bot.guilds]
+    to_raid_tasks = [
+        raid_sql.to_raid(bot=bot)
+        for raid_sql in raids_sql
+        if raid_sql.guild_id in bot_guild_ids
+    ]
     raids_list: List[Raid] = await asyncio.gather(*to_raid_tasks)
     session.close()
     return raids_list
