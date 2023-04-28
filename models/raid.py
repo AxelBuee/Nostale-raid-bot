@@ -61,7 +61,7 @@ class Raid:
             title=f"Session {self.raid_name}",
             colour=Colour.from_rgb(*RAID_TEMPLATES[self.raid_name]["colour"]),
         )
-        embed.set_author(name=self.author.name)
+        embed.set_author(name=f"{self.author.name} - {self.message.id}")
         thumbnail = next(
             (emoji for emoji in guild_emojis if self.raid_name.lower() in emoji.name),
             None,
@@ -93,10 +93,47 @@ class Raid:
             embed.add_field(name="Result", value=f"{self.nb_of_raids} raids")
         return embed
 
+    def to_cancel_embed(self, guild_emojis: List[Emoji]) -> Embed:
+        embed = Embed(
+            title=f"Session {self.raid_name}",
+            colour=Colour.from_rgb(*RAID_TEMPLATES[self.raid_name]["colour"]),
+        )
+        embed.set_author(name=f"{self.author.name} - {self.message.id}")
+        thumbnail = next(
+            (emoji for emoji in guild_emojis if self.raid_name.lower() in emoji.name),
+            None,
+        )
+        if thumbnail:
+            embed.set_thumbnail(url=thumbnail.url)
+        embed.add_field(
+            name="Date",
+            value="~~`"
+            + format_date(
+                self.start_datetime.date(), format="full", locale="fr_FR"
+            ).capitalize()
+            + "`~~",
+        )
+        embed.add_field(
+            name="Heure",
+            value=(
+                f"~~`{format_time(self.start_datetime.time(), format='short', locale='fr_FR')}` - "
+                f"`{format_time((self.start_datetime + timedelta(hours=self.duration)).time(), format='short', locale='fr_FR')}`~~"
+            ),
+        )
+        embed.add_field(
+            name=f"**__SESSION ANNULÉE__**",
+            value=f"",
+            inline=False,
+        )
+        return embed
+
     def get_participant_list_pprint(self):
+        sorted_participants = sorted(
+            self.participants.items(), key=lambda x: x[1]["reaction_emoji"]
+        )
         return "\n".join(
             f"{reactions['reaction_emoji']} {participant.mention}"
-            for participant, reactions in self.participants.items()
+            for participant, reactions in sorted_participants
         )
 
     def get_serialized_participants(self):

@@ -131,7 +131,7 @@ class RaidCog(commands.Cog):
             max_participants=max_participants,
             participants={},
         )
-        view = RaidView(raid=new_raid)
+        view = RaidView(raid=new_raid, bot=self.bot)
 
         embed = new_raid.to_embed(self.bot.emoji_dict.get(interaction.guild_id, []))
 
