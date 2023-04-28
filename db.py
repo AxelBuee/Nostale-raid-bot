@@ -5,6 +5,7 @@ from typing import Any
 from discord import Guild, Message, PartialMessage
 from discord.ext import commands
 from dotenv import load_dotenv
+import pytz
 from sqlalchemy import (
     JSON,
     BigInteger,
@@ -98,7 +99,9 @@ class RaidSQL(Base):
             author=author,
             guild_id=self.guild_id,
             channel_id=self.channel_id,
-            start_datetime=self.start_datetime,
+            start_datetime=self.start_datetime.astimezone(
+                pytz.timezone("Europe/Paris")
+            ),
             duration=self.duration,
             max_participants=self.max_participants,
             participants=participants,
