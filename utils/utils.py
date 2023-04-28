@@ -29,17 +29,32 @@ async def load_raids_from_db(bot: commands.Bot):
     return raids_list
 
 
+def delete_raid_from_db(raid: Raid):
+    session = get_session()
+    raid = (
+        session.query(RaidSQL)
+        .filter_by(message_id=raid.message.id, channel_id=raid.channel_id)
+        .first()
+    )
+    if raid:
+        session.delete(raid)
+        session.commit()
+        logger.info(f"Deleted raid {raid.message_id} from database")
+        return True
+    return False
+
+
 def update_raid_in_db(raid: Raid):
     session = get_session()
     raid_sql = raid.to_raid_sql()
     session.merge(raid_sql)
     session.commit()
-    logger.info(f"Saved {raid} into database")
+    logger.info(f"Saved raid {raid.message.id} into database")
 
 
 def generate_raids_dict(raids_list: List[Raid]) -> dict[int, Raid]:
     raids = {}
     for raid in raids_list:
         raids[raid.message.id] = raid
-        logger.info(f"Loaded {raid} into memory")
+        logger.info(f"Loaded raid {raid.message.id} into memory dict")
     return raids
