@@ -51,10 +51,10 @@ class RaidView(discord.ui.View):
             )
             return
 
-        await interaction.response.defer()
+        await interaction.response.defer(ephemeral=True)
         deleted = delete_raid_from_db(self.raid)
         if deleted:
-            await interaction.followup.send("Raid canceled")
+            await interaction.followup.send("Raid canceled", ephemeral=True)
             del self.bot.raids[self.raid.message.id]
             thread = interaction.channel.get_thread(self.raid.message.id)
             await thread.send(
@@ -68,16 +68,6 @@ class RaidView(discord.ui.View):
             )
             self.stop()
             return
-
-        for user in self.raid.participants.keys():
-            dm_channel = await user.create_dm()
-            await dm_channel.send(
-                "Raid is about to start", embed=self.raid.to_embed([])
-            )
-            logger.info(f"Send DM to {user.name} for raid {self.raid.message.id}")
-        else:
-            await interaction.response.send_message(
-                "You can only notify between start_raid_time + 30min and start_raid_time",
-                ephemeral=True,
-            )
-            return
+        await interaction.followup.send(
+            "Couldn't cancel raid, please contact @AxelB", ephemeral=True
+        )
