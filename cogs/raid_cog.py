@@ -11,7 +11,7 @@ from models.error_embed import ErrorEmbed
 from models.raid import Raid
 from nostale_bot import NostaleRaidHelperBot
 from templates.templates import RAID_TEMPLATES
-from utils.utils import update_raid_in_db
+from utils.utils import update_raid_in_db, parse_date, parse_time
 from views.raid_view import RaidView
 
 
@@ -108,13 +108,19 @@ class RaidCog(commands.Cog):
         """Start a new raid session with specified inputs"""
         await interaction.response.send_message(f"Creating raid", ephemeral=True)
         role = discord.utils.get(interaction.channel.guild.roles, name="Raideur")
+        start_date_obj = parse_date(start_date)
+        start_time_obj = parse_time(start_time)
+        if start_date_obj is None or start_time_obj is None:
+            await interaction.edit_original_response(
+                embed=ErrorEmbed(
+                    description="Date or time format was wrong. Please try again"
+                )
+            )
+            return
+        tz = pytz.timezone("Europe/Paris")
         message = await interaction.channel.send(
             content=role.mention + f"Nouvelle session {raid_name} en création"
         )
-        start_date_obj = datetime.fromisoformat(start_date).date()
-        start_time_obj = datetime.strptime(start_time, "%H:%M").time()
-        tz = pytz.timezone("Europe/Paris")
-
         if not max_participants:
             max_participants = RAID_TEMPLATES[raid_name]["max_participants"]
         logger.info(f"{interaction.user} created a new raid")
