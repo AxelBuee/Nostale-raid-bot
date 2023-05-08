@@ -1,5 +1,5 @@
 import asyncio
-from datetime import datetime
+from datetime import datetime, date, time
 from typing import List
 
 import pytz
@@ -8,6 +8,9 @@ from discord.ext import commands
 from db import RaidSQL, get_session
 from logger import logger
 from models.raid import Raid
+
+DATE_FORMATS = ["%d/%m/%Y", "%Y-%m-%d"]
+TIME_FORMATS = ["%H:%M", "%Hh%M", "%HH%M"]
 
 
 async def load_raids_from_db(bot: commands.Bot):
@@ -58,3 +61,25 @@ def generate_raids_dict(raids_list: List[Raid]) -> dict[int, Raid]:
         raids[raid.message.id] = raid
         logger.info(f"Loaded raid {raid.message.id} into memory dict")
     return raids
+
+
+def parse_date(date_string: str) -> date | None:
+    start_date_obj = None
+    for date_format in DATE_FORMATS:
+        try:
+            start_date_obj = datetime.strptime(date_string, date_format).date()
+            break
+        except ValueError:
+            pass
+    return start_date_obj
+
+
+def parse_time(time: str) -> time | None:
+    start_time_obj = None
+    for time_format in TIME_FORMATS:
+        try:
+            start_time_obj = datetime.strptime(time, time_format).time()
+            break
+        except ValueError:
+            pass
+    return start_time_obj
