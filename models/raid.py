@@ -89,6 +89,11 @@ class Raid:
             inline=False,
         )
         embed.add_field(name="Voc", value="<#766229388479823902>")
+        embed.add_field(
+            name="Remarque",
+            value="__**OBLIGATOIRE**__: <#1085523475353055243>",
+            inline=False,
+        )
         if self.nb_of_raids != 0:
             embed.add_field(name="Result", value=f"{self.nb_of_raids} raids")
         return embed

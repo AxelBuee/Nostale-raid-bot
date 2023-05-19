@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import discord
 import pytz
@@ -41,6 +41,22 @@ class RaidCog(commands.Cog):
                 raid.participants[user]["reaction_emoji"] = str(payload.emoji)
                 await message.remove_reaction(current_emoji, user)
             else:
+                member = discord.utils.get(guild.roles, name="Membre")
+                friend = discord.utils.get(guild.roles, name="Ami.e")
+                if member in raid.author.roles and friend in user.roles:
+                    now = datetime.now(pytz.timezone("Europe/Paris"))
+                    time_difference = raid.start_datetime - now
+                    if time_difference >= timedelta(hours=2):
+                        logger.info(
+                            f"User {user.display_name} tried to react to raid {message.id} 2h before start"
+                        )
+                        await user.send(
+                            embed=ErrorEmbed(
+                                description=f"Because you are not a Member, you can only participate 2 hours before the raid starts"
+                            )
+                        )
+                        await message.remove_reaction(payload.emoji, user)
+                        return
                 raid.add_participant(user, str(payload.emoji))
                 thread = channel.get_thread(message.id)
                 await thread.add_user(user)
