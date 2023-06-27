@@ -88,10 +88,17 @@ class Raid:
             value=self.get_participant_list_pprint(),
             inline=False,
         )
-        embed.add_field(name="Voc", value="<#766229388479823902>")
+        remark = "__**OBLIGATOIRE**__: <#1085523475353055243>"
+        if RAID_TEMPLATES[self.raid_name].get("opt_messages"):
+            remark = (
+                remark
+                + "\n"
+                + "\n".join(RAID_TEMPLATES[self.raid_name]["opt_messages"])
+            )
+        embed.add_field(name="Voc", value="<#1122221781336469595>")
         embed.add_field(
             name="Remarque",
-            value="__**OBLIGATOIRE**__: <#1085523475353055243>",
+            value=remark,
             inline=False,
         )
         if self.nb_of_raids != 0:

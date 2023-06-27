@@ -102,6 +102,8 @@ class RaidCog(commands.Cog):
     )
     @app_commands.choices(
         raid_name=[
+            Choice(name="Alzanor", value="Alzanor"),
+            Choice(name="Valehir", value="Valehir"),
             Choice(name="Belial", value="Belial"),
             Choice(name="Carno", value="Carno"),
             Choice(name="Erenia", value="Erenia"),
@@ -165,9 +167,14 @@ class RaidCog(commands.Cog):
         await message.add_reaction("🏹")
         await message.add_reaction("🧙")
         await message.add_reaction("🤜")
-        await message.create_thread(
+        thread = await message.create_thread(
             name=f"Session {new_raid.raid_name} - {new_raid.start_datetime.strftime('%Y-%m-%d %H:%M')}"
         )
+        if RAID_TEMPLATES[raid_name].get("opt_images"):
+            for img in RAID_TEMPLATES[raid_name]["opt_images"]:
+                with open(img, "rb") as f:
+                    image = discord.File(f)
+                    await thread.send(file=image)
         update_raid_in_db(new_raid)
         await interaction.edit_original_response(content="Raid fully created")
 
