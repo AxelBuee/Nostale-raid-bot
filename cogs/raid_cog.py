@@ -97,20 +97,22 @@ class RaidCog(commands.Cog):
         raid_name="Name of the raid",
         start_date="Raid date (YYYY-MM-DD)",
         start_time="Raid start time (HH:MM)",
-        duration="Raid duration in hour (ex: 1)",
+        duration="Raid duration in hour (default: 1)",
         max_participants="Max number of participants (if you want to override default max)",
     )
     @app_commands.choices(
         raid_name=[
             Choice(name="Alzanor", value="Alzanor"),
-            Choice(name="Valehir", value="Valehir"),
             Choice(name="Belial", value="Belial"),
             Choice(name="Carno", value="Carno"),
+            Choice(name="Draco+Glacerus", value="DraGla"),
             Choice(name="Erenia", value="Erenia"),
             Choice(name="Fernon", value="Fernon"),
+            Choice(name="Glacerus", value="Glacerus"),
             Choice(name="Kirollas", value="Kirollas"),
             Choice(name="Laurena", value="Laurena"),
             Choice(name="Paimon", value="Paimon"),
+            Choice(name="Valehir", value="Valehir"),
             Choice(name="Zenas", value="Zenas"),
         ]
     )
@@ -120,7 +122,7 @@ class RaidCog(commands.Cog):
         raid_name: str,
         start_date: str,
         start_time: str,
-        duration: int,
+        duration: int = 1,
         max_participants: int | None = None,
     ):
         """Start a new raid session with specified inputs"""
