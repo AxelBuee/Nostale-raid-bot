@@ -84,6 +84,9 @@ class Raid:
             ),
         )
         embed.add_field(
+            name="⏳", value=f"<t:{int(round(self.start_datetime.timestamp()))}:R>"
+        )
+        embed.add_field(
             name=f"Participants ({len(self.participants)}/{self.max_participants}):",
             value=self.get_participant_list_pprint(),
             inline=False,
