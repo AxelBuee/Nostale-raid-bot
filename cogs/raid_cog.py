@@ -187,7 +187,7 @@ class RaidCog(commands.Cog):
             await interaction.response.defer(ephemeral=True, thinking=True)
             original_message_id = interaction.channel.id
             raid = self.bot.raids.get(original_message_id)
-            admin = discord.utils.get(interaction.guild.roles, name="Assitant/Gardien")
+            admin = discord.utils.get(interaction.guild.roles, name="Assistant/Gardien")
             if (
                 interaction.user.id != raid.author.id
                 and admin not in interaction.user.roles
