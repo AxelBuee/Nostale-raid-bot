@@ -127,7 +127,10 @@ class RaidCog(commands.Cog):
     ):
         """Start a new raid session with specified inputs"""
         await interaction.response.send_message(f"Creating raid", ephemeral=True)
-        role = discord.utils.get(interaction.channel.guild.roles, name="Raideur")
+        role = discord.utils.get(
+            interaction.channel.guild.roles,
+            name=f"Raideur {interaction.channel.category}",
+        )
         start_date_obj = parse_date(start_date)
         start_time_obj = parse_time(start_time)
         if start_date_obj is None or start_time_obj is None:
