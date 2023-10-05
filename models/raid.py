@@ -98,7 +98,7 @@ class Raid:
                 + "\n"
                 + "\n".join(RAID_TEMPLATES[self.raid_name]["opt_messages"])
             )
-        embed.add_field(name="Voc", value="<#1122221781336469595>")
+        embed.add_field(name="Voc", value="<#722139478248128652>")
         embed.add_field(
             name="Remarque",
             value=remark,
