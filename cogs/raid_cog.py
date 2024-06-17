@@ -103,6 +103,7 @@ class RaidCog(commands.Cog):
     @app_commands.choices(
         raid_name=[
             Choice(name="Alzanor", value="Alzanor"),
+            Choice(name="Arma", value="Arma"),
             Choice(name="Belial", value="Belial"),
             Choice(name="Carno", value="Carno"),
             Choice(name="Draco+Glacerus", value="DraGla"),
@@ -112,6 +113,7 @@ class RaidCog(commands.Cog):
             Choice(name="Kirollas", value="Kirollas"),
             Choice(name="Laurena", value="Laurena"),
             Choice(name="Paimon", value="Paimon"),
+            Choice(name="Pollutus", value="Pollutus"),
             Choice(name="Valehir", value="Valehir"),
             Choice(name="Zenas", value="Zenas"),
         ]
