@@ -91,7 +91,7 @@ class Raid:
             value=self.get_participant_list_pprint(),
             inline=False,
         )
-        remark = "__**OBLIGATOIRE**__: <#1085523475353055243>"
+        remark = ""
         if RAID_TEMPLATES[self.raid_name].get("opt_messages"):
             remark = (
                 remark
