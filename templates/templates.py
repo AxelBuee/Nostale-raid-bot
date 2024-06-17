@@ -1,5 +1,6 @@
 RAID_TEMPLATES = {
     "Alzanor": {"max_participants": 15, "colour": (26, 64, 240)},
+    "Arma": {"max_participants": 12, "colour": (255, 241, 186)},
     "Belial": {"max_participants": 20, "colour": (0, 0, 0)},
     "Carno": {"max_participants": 8, "colour": (0, 0, 0)},
     "DraGla": {
@@ -12,6 +13,7 @@ RAID_TEMPLATES = {
     "Kirollas": {"max_participants": 8, "colour": (255, 69, 0)},
     "Laurena": {"max_participants": 20, "colour": (0, 0, 0)},
     "Paimon": {"max_participants": 20, "colour": (26, 64, 240)},
+    "Pollutus": {"max_participants": 8, "colour": (192, 192, 192)},
     "Valehir": {
         "max_participants": 15,
         "colour": (0, 0, 0),
