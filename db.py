@@ -26,7 +26,7 @@ Base = declarative_base()
 def get_session():
     db_password = os.getenv("DB_PASSWORD")
     engine = create_engine(
-        f"postgresql://postgres:{db_password}@db.mufzuhmjkoamnhljvgsn.supabase.co:5432/postgres"
+        f"postgresql://postgres.mufzuhmjkoamnhljvgsn:{db_password}@aws-0-eu-west-2.pooler.supabase.com:6543/postgres"
     )
     Session = sessionmaker(bind=engine)
     session = Session()
