@@ -28,11 +28,11 @@ class NostaleRaidHelperBot(commands.Bot):
             logger.info(f"Synced {len(synced)} command(s)")
         except Exception as e:
             logger.critical(e)
-        raids_list = await load_raids_from_db(bot=self)
-        self.raids = generate_raids_dict(raids_list)
         for guild in self.guilds:
             emojis = await guild.fetch_emojis()
             self.emoji_dict[guild.id] = emojis
+        raids_list = await load_raids_from_db(bot=self)
+        self.raids = generate_raids_dict(raids_list, self.emoji_dict)
 
 
 # intents = discord.Intents(messages=True, reactions=True, guilds=True, members=True, presences=True, voice_states=True, typing=True, bans=True, emojis=True, integrations=True, webhooks=True, invites=True, voice_states=True, dm_typing=True, guild_typing=True, reactions=True, guild_reactions=True, messages=True, guild_messages=True, dm_messages=True, guild_typing=True, dm_typing=True, presences=True, guild_presences=True)
