@@ -9,20 +9,20 @@ from templates.templates import RAID_TEMPLATES
 
 
 PSP_LIST = [
-    "Akhenaton",
-    "Amon",
-    "Chloe",
-    "Ducat",
-    "Freya",
-    "Harlequin",
-    "Laurena",
-    "Lucifer",
-    "Mad",
-    "Palina",
-    "Perti",
-    "Ragnar",
-    "Venus",
-    "trophy",
+    "akhenaton",
+    "amon",
+    "chloe",
+    "ducat",
+    "freya",
+    "harlequin",
+    "laurena",
+    "lucifer",
+    "mad/test/eliza",
+    "palina",
+    "perti",
+    "ragnar",
+    "venus",
+    "all_psp",
 ]
 
 
@@ -175,19 +175,12 @@ class Raid:
         psp_emojis = "".join(
             str(matching_emoji)
             for participant_role in participant.roles
-            if participant_role.name in PSP_LIST
+            if participant_role.name.lower() in PSP_LIST
             for matching_emoji in self.guild_emojis
             if participant_role.name.lower() in matching_emoji.name.lower()
+            and "psp" in matching_emoji.name.lower()
         )
         return psp_emojis
-        # participant_psps = []
-        # for participant in self.participants:
-        #     for participant_role in participant.roles:
-        #         if participant_role.name in PSP_LIST:
-        #             # TODO: Check what to do with MAD/TEST/ELIZA
-        #             matching_emoji = next((emoji for emoji in self.guild_emojis if participant_role.name.lower() in emoji.name.lower()), None)
-        #             if matching_emoji:
-        #                 participant_psps.append(matching_emoji)
 
     def get_serialized_participants(self):
         serialized = {}
