@@ -161,6 +161,7 @@ class RaidCog(commands.Cog):
             duration=duration,
             max_participants=max_participants,
             participants={},
+            guild_emojis=self.bot.emoji_dict.get(interaction.guild_id, []),
         )
         view = RaidView(raid=new_raid, bot=self.bot)
 
