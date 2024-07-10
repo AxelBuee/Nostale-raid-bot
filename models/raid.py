@@ -6,7 +6,24 @@ from discord import Colour, Embed, Emoji, Member, Message
 
 from db import RaidSQL
 from templates.templates import RAID_TEMPLATES
-from utils.utils import PSP_LIST
+
+
+PSP_LIST = [
+    "Akhenaton",
+    "Amon",
+    "Chloe",
+    "Ducat",
+    "Freya",
+    "Harlequin",
+    "Laurena",
+    "Lucifer",
+    "Mad",
+    "Palina",
+    "Perti",
+    "Ragnar",
+    "Venus",
+    "trophy",
+]
 
 
 class Raid:
