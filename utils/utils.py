@@ -3,6 +3,7 @@ from datetime import datetime, date, time
 from typing import List
 
 import pytz
+from discord import Emoji
 from discord.ext import commands
 
 from db import RaidSQL, get_session
@@ -55,9 +56,12 @@ def update_raid_in_db(raid: Raid):
     logger.info(f"Saved raid {raid.message.id} into database")
 
 
-def generate_raids_dict(raids_list: List[Raid]) -> dict[int, Raid]:
+def generate_raids_dict(
+    raids_list: List[Raid], emoji_dict: dict[int, List[Emoji]]
+) -> dict[int, Raid]:
     raids = {}
     for raid in raids_list:
+        raid.guild_emojis = emoji_dict.get(raid.guild_id, [])
         raids[raid.message.id] = raid
         logger.info(f"Loaded raid {raid.message.id} into memory dict")
     return raids

@@ -172,27 +172,15 @@ class Raid:
         )
 
     def get_participant_psps(self, participant: Member):
-        psp_emojis = []
-        for participant_role in participant.roles:
-            role_name_lower = participant_role.name.lower()
-            if role_name_lower in PSP_LIST:
-                print(role_name_lower)
-                for matching_emoji in self.guild_emojis:
-                    if role_name_lower in matching_emoji.name.lower():
-                        print(matching_emoji)
-                        if "psp" in matching_emoji.name.lower():
-                            print(matching_emoji)
-                            psp_emojis.append(str(matching_emoji))
-
-        # psp_emojis = "".join(
-        #     str(matching_emoji)
-        #     for participant_role in participant.roles
-        #     if participant_role.name.lower() in PSP_LIST
-        #     for matching_emoji in self.guild_emojis
-        #     if participant_role.name.lower() in matching_emoji.name.lower()
-        #     and "psp" in matching_emoji.name.lower()
-        # )
-        return "".join(psp_emojis)
+        psp_emojis = "".join(
+            str(matching_emoji)
+            for participant_role in participant.roles
+            if participant_role.name.lower() in PSP_LIST
+            for matching_emoji in self.guild_emojis
+            if participant_role.name.lower() in matching_emoji.name.lower()
+            and "psp" in matching_emoji.name.lower()
+        )
+        return psp_emojis
 
     def get_serialized_participants(self):
         serialized = {}
