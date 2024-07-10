@@ -11,22 +11,6 @@ from models.raid import Raid
 
 DATE_FORMATS = ["%d/%m/%Y", "%d-%m-%Y", "%Y-%m-%d"]
 TIME_FORMATS = ["%H:%M", "%Hh%M", "%HH%M"]
-PSP_LIST = [
-    "Akhenaton",
-    "Amon",
-    "Chloe",
-    "Ducat",
-    "Freya",
-    "Harlequin",
-    "Laurena",
-    "Lucifer",
-    "Mad",
-    "Palina",
-    "Perti",
-    "Ragnar",
-    "Venus",
-    "trophy",
-]
 
 
 async def load_raids_from_db(bot: commands.Bot):
