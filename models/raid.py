@@ -17,7 +17,7 @@ PSP_LIST = [
     "harlequin",
     "laurena",
     "lucifer",
-    "mad/test/eliza",
+    "mad_test_eliza",
     "palina",
     "perti",
     "ragnar",
