@@ -6,6 +6,7 @@ from discord import Colour, Embed, Emoji, Member, Message
 
 from db import RaidSQL
 from templates.templates import RAID_TEMPLATES
+from utils.utils import PSP_LIST
 
 
 class Raid:
@@ -21,6 +22,7 @@ class Raid:
         max_participants=2,
         participants=None,
         nb_of_raids=0,
+        guild_emojis=[],
     ):
         self.author: Member = author
         self.raid_name: str = raid_name
@@ -32,6 +34,7 @@ class Raid:
         self.nb_of_raids: int = nb_of_raids
         self.guild_id: int = guild_id
         self.channel_id: int = channel_id
+        self.guild_emojis: List[Emoji] = guild_emojis
 
     def __str__(self):
         str_raid = f"Session {self.raid_name}! \n Starting at : {self.start_datetime} \n Participants ({len(self.participants)}/{self.max_participants}):"
@@ -147,9 +150,27 @@ class Raid:
             self.participants.items(), key=lambda x: x[1]["reaction_emoji"]
         )
         return "\n".join(
-            f"{reactions['reaction_emoji']} {participant.mention}"
+            f"{reactions['reaction_emoji']} {participant.mention}  ({self.get_participant_psps(participant)})"
             for participant, reactions in sorted_participants
         )
+
+    def get_participant_psps(self, participant: Member):
+        psp_emojis = "".join(
+            str(matching_emoji)
+            for participant_role in participant.roles
+            if participant_role.name in PSP_LIST
+            for matching_emoji in self.guild_emojis
+            if participant_role.name.lower() in matching_emoji.name.lower()
+        )
+        return psp_emojis
+        # participant_psps = []
+        # for participant in self.participants:
+        #     for participant_role in participant.roles:
+        #         if participant_role.name in PSP_LIST:
+        #             # TODO: Check what to do with MAD/TEST/ELIZA
+        #             matching_emoji = next((emoji for emoji in self.guild_emojis if participant_role.name.lower() in emoji.name.lower()), None)
+        #             if matching_emoji:
+        #                 participant_psps.append(matching_emoji)
 
     def get_serialized_participants(self):
         serialized = {}
