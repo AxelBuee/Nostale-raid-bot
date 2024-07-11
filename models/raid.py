@@ -14,7 +14,7 @@ PSP_LIST = [
     "chloe",
     "ducat",
     "freya",
-    "harlequin",
+    "harle",
     "laurena",
     "lucifer",
     "dps",
@@ -108,7 +108,27 @@ class Raid:
         )
         embed.add_field(
             name=f"Participants ({len(self.participants)}/{self.max_participants}):",
-            value=self.get_participant_list_pprint(),
+            value="",
+            inline=False,
+        )
+        embed.add_field(
+            name="",
+            value=self.get_participant_list_pprint(role="🏹"),
+            inline=False,
+        )
+        embed.add_field(
+            name="",
+            value=self.get_participant_list_pprint(role="⚔️"),
+            inline=False,
+        )
+        embed.add_field(
+            name="",
+            value=self.get_participant_list_pprint(role="🧙"),
+            inline=False,
+        )
+        embed.add_field(
+            name="",
+            value=self.get_participant_list_pprint(role="🤜"),
             inline=False,
         )
         remark = ""
@@ -162,10 +182,18 @@ class Raid:
         )
         return embed
 
-    def get_participant_list_pprint(self):
-        sorted_participants = sorted(
-            self.participants.items(), key=lambda x: x[1]["reaction_emoji"]
-        )
+    def get_participant_list_pprint(self, role=None):
+        if role is None:
+            sorted_participants = sorted(
+                self.participants.items(), key=lambda x: x[1]["reaction_emoji"]
+            )
+        else:
+            filtered_participants = filter(
+                lambda x: x[1]["reaction_emoji"] == role, self.participants.items()
+            )
+            sorted_participants = sorted(
+                filtered_participants, key=lambda x: x[1]["reaction_emoji"]
+            )
         return "\n".join(
             f"{reactions['reaction_emoji']} {participant.mention}  ({self.get_participant_psps(participant)})"
             for participant, reactions in sorted_participants
