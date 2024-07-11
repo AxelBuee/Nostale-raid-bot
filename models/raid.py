@@ -17,7 +17,7 @@ PSP_LIST = [
     "harlequin",
     "laurena",
     "lucifer",
-    "mad_test_eliza",
+    "dps",
     "palina",
     "perti",
     "ragnar",
@@ -177,8 +177,8 @@ class Raid:
             for participant_role in participant.roles
             if participant_role.name.lower() in PSP_LIST
             for matching_emoji in self.guild_emojis
-            if participant_role.name.lower() in matching_emoji.name.lower()
-            and "psp" in matching_emoji.name.lower()
+            if participant_role.name.lower()[:4] in matching_emoji.name.lower()
+            and "p_" in matching_emoji.name.lower()
         )
         return psp_emojis
 
