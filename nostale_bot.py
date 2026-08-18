@@ -22,6 +22,7 @@ class NostaleRaidHelperBot(commands.Bot):
     async def on_ready(self):
         from utils.utils import generate_raids_dict, load_raids_from_db
 
+        synced = await self.tree.sync(guild=discord.Object(id=688757693850452007))
         logger.info("Bot is up and ready !")
         try:
             synced = await self.tree.sync()
