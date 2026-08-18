@@ -9,6 +9,10 @@ class UtilsCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
+    @app_commands.command(name="ping_test")
+    async def ping_test(self, interaction: discord.Interaction):
+        await interaction.response.send_message("pong")
+
     @app_commands.command(name="clear")
     @app_commands.checks.has_role("Assistant/Gardien")
     @app_commands.describe(

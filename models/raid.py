@@ -25,6 +25,14 @@ PSP_LIST = [
     "all_psp",
 ]
 
+ROLE_LABELS = {
+    "🛡️": "Tank",
+    "❤️": "Healer",
+    "💀": "Debuffer",
+    "⚔️": "DPS",
+}
+ROLE_ORDER = ["🛡️", "❤️", "💀", "⚔️"]
+
 
 class Raid:
     def __init__(
@@ -36,7 +44,7 @@ class Raid:
         channel_id: int,
         start_datetime: datetime,
         duration=1,
-        max_participants=2,
+        role_limits: dict[str, int] | None = None,
         participants=None,
         nb_of_raids=0,
         guild_emojis=[],
@@ -46,26 +54,42 @@ class Raid:
         self.start_datetime: datetime = start_datetime
         self.duration: int = duration
         self.message = message
-        self.max_participants: int = max_participants
+        self.role_limits: dict[str, int] = role_limits or {}
         self.participants: dict[Member, dict[str, Any]] = participants
         self.nb_of_raids: int = nb_of_raids
         self.guild_id: int = guild_id
         self.channel_id: int = channel_id
         self.guild_emojis: List[Emoji] = guild_emojis
 
+    @property
+    def max_participants(self) -> int:
+        """Total, calculé à partir des limites par rôle (garde la compat avec to_embed)."""
+        return sum(self.role_limits.values())
+
     def __str__(self):
         str_raid = f"Session {self.raid_name}! \n Starting at : {self.start_datetime} \n Participants ({len(self.participants)}/{self.max_participants}):"
         str_raid += f"\n{self.get_participant_list_pprint()}"
         return str_raid
 
+    def get_role_count(self, reaction_emoji: str) -> int:
+        return sum(
+            1
+            for data in self.participants.values()
+            if data["reaction_emoji"] == reaction_emoji
+        )
+
+    def has_room_for_role(self, reaction_emoji: str) -> bool:
+        return self.get_role_count(reaction_emoji) < self.role_limits.get(
+            reaction_emoji, 0
+        )
+
     def add_participant(self, user: Member, reaction_emoji: str):
-        if (
-            len(self.participants) < self.max_participants
-            and user not in self.participants
-        ):
-            self.participants[user] = {"reaction_emoji": reaction_emoji}
-            return True
-        return False
+        if user in self.participants:
+            return False
+        if not self.has_room_for_role(reaction_emoji):
+            return False
+        self.participants[user] = {"reaction_emoji": reaction_emoji}
+        return True
 
     def remove_participant(self, user: Member):
         if user in self.participants:
@@ -83,7 +107,12 @@ class Raid:
         )
         embed.set_author(name=f"{self.author.name} - {self.message.id}")
         thumbnail = next(
-            (emoji for emoji in guild_emojis if self.raid_name.lower() in emoji.name),
+            (
+                emoji
+                for emoji in guild_emojis
+                if RAID_TEMPLATES[self.raid_name]["boss_icon_name"].lower()
+                in emoji.name
+            ),
             None,
         )
         if thumbnail:
@@ -97,7 +126,7 @@ class Raid:
             + "`",
         )
         embed.add_field(
-            name="Heure",
+            name="Time",
             value=(
                 f"`{format_time(self.start_datetime.time(), format='short', locale='fr_FR')}` - "
                 f"`{format_time((self.start_datetime + timedelta(hours=self.duration)).time(), format='short', locale='fr_FR')}`"
@@ -106,31 +135,22 @@ class Raid:
         embed.add_field(
             name="⏳", value=f"<t:{int(round(self.start_datetime.timestamp()))}:R>"
         )
+        embed.add_field(name="👑 Leader", value=self.author.mention, inline=False)
         embed.add_field(
-            name=f"Participants ({len(self.participants)}/{self.max_participants}):",
-            value="",
+            name=f"👥 Team ({len(self.participants)}/{self.max_participants})",
+            value="\u200b",
             inline=False,
         )
-        embed.add_field(
-            name="",
-            value=self.get_participant_list_pprint(role="🏹"),
-            inline=False,
-        )
-        embed.add_field(
-            name="",
-            value=self.get_participant_list_pprint(role="⚔️"),
-            inline=False,
-        )
-        embed.add_field(
-            name="",
-            value=self.get_participant_list_pprint(role="🧙"),
-            inline=False,
-        )
-        embed.add_field(
-            name="",
-            value=self.get_participant_list_pprint(role="🤜"),
-            inline=False,
-        )
+        for emoji in ROLE_ORDER:
+            label = ROLE_LABELS[emoji]
+            limit = self.role_limits.get(emoji, 0)
+            count = self.get_role_count(emoji)
+            participants_list = self.get_role_participant_list(emoji)
+            embed.add_field(
+                name=f"{emoji} {label} ({count}/{limit})",
+                value=participants_list or "\u200b",
+                inline=False,
+            )
         remark = ""
         if RAID_TEMPLATES[self.raid_name].get("opt_messages"):
             remark = (
@@ -138,12 +158,12 @@ class Raid:
                 + "\n"
                 + "\n".join(RAID_TEMPLATES[self.raid_name]["opt_messages"])
             )
-        embed.add_field(name="Voc", value="<#722139478248128652>")
-        embed.add_field(
-            name="Remarque",
-            value=remark,
-            inline=False,
-        )
+        if remark:
+            embed.add_field(
+                name="Remark",
+                value=remark,
+                inline=False,
+            )
         if self.nb_of_raids != 0:
             embed.add_field(name="Result", value=f"{self.nb_of_raids} raids")
         return embed
@@ -169,14 +189,14 @@ class Raid:
             + "`~~",
         )
         embed.add_field(
-            name="Heure",
+            name="Time",
             value=(
                 f"~~`{format_time(self.start_datetime.time(), format='short', locale='fr_FR')}` - "
                 f"`{format_time((self.start_datetime + timedelta(hours=self.duration)).time(), format='short', locale='fr_FR')}`~~"
             ),
         )
         embed.add_field(
-            name=f"**__SESSION ANNULÉE__**",
+            name=f"**__SESSION CANCELLED__**",
             value=f"",
             inline=False,
         )
@@ -195,20 +215,9 @@ class Raid:
                 filtered_participants, key=lambda x: x[1]["reaction_emoji"]
             )
         return "\n".join(
-            f"{reactions['reaction_emoji']} {participant.mention}  ({self.get_participant_psps(participant)})"
+            f"{reactions['reaction_emoji']} {participant.mention}"
             for participant, reactions in sorted_participants
         )
-
-    def get_participant_psps(self, participant: Member):
-        psp_emojis = "".join(
-            str(matching_emoji)
-            for participant_role in participant.roles
-            if participant_role.name.lower() in PSP_LIST
-            for matching_emoji in self.guild_emojis
-            if participant_role.name.lower()[:4] in matching_emoji.name.lower()
-            and "p_" in matching_emoji.name.lower()
-        )
-        return psp_emojis
 
     def get_serialized_participants(self):
         serialized = {}
@@ -222,10 +231,19 @@ class Raid:
             raid_name=self.raid_name,
             start_datetime=self.start_datetime,
             duration=self.duration,
-            max_participants=self.max_participants,
+            role_limits=self.role_limits,
             message_id=self.message.id,
             participants=self.get_serialized_participants(),
             nb_of_raids=self.nb_of_raids,
             guild_id=self.guild_id,
             channel_id=self.channel_id,
         )
+
+    def get_role_participant_list(self, reaction_emoji: str) -> str:
+        """Liste des participants pour un rôle donné, en bullet points (sans l'emoji, déjà dans le header)."""
+        participants = [
+            (user, data)
+            for user, data in self.participants.items()
+            if data["reaction_emoji"] == reaction_emoji
+        ]
+        return "\n".join(f"• {user.mention}" for user, data in participants)

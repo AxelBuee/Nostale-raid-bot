@@ -11,7 +11,7 @@ from models.error_embed import ErrorEmbed
 from models.raid import Raid
 from nostale_bot import NostaleRaidHelperBot
 from templates.templates import RAID_TEMPLATES
-from utils.utils import update_raid_in_db, parse_date, parse_time
+from utils.utils import parse_date, parse_time, update_raid_in_db
 from views.raid_view import RaidView
 
 
@@ -30,15 +30,22 @@ class RaidCog(commands.Cog):
         message = await channel.fetch_message(payload.message_id)
         if message.author != self.bot.user:
             return
-        if str(payload.emoji) in "⚔️🏹🧙🤜":
-            if (
-                len(raid.participants) >= raid.max_participants
-                and user not in raid.participants
-            ):
-                return
+        emoji_str = str(payload.emoji)
+        if emoji_str in "🛡️❤️💀⚔️":
             current_emoji = raid.get_participant_emoji(user)
+
+            if current_emoji == emoji_str:
+                return  # déjà inscrit avec ce rôle, rien à faire
+
             if current_emoji:
-                raid.participants[user]["reaction_emoji"] = str(payload.emoji)
+                # L'utilisateur change de rôle : vérifie que le nouveau rôle a de la place
+                if not raid.has_room_for_role(emoji_str):
+                    await message.remove_reaction(payload.emoji, user)
+                    await user.send(
+                        embed=ErrorEmbed(description="Ce rôle est déjà complet")
+                    )
+                    return
+                raid.participants[user]["reaction_emoji"] = emoji_str
                 await message.remove_reaction(current_emoji, user)
             else:
                 member = discord.utils.get(guild.roles, name="Membre")
@@ -52,19 +59,28 @@ class RaidCog(commands.Cog):
                         )
                         await user.send(
                             embed=ErrorEmbed(
-                                description=f"Because you are not a Member, you can only participate 2 hours before the raid starts"
+                                description="Because you are not a Member, you can only participate 2 hours before the raid starts"
                             )
                         )
                         await message.remove_reaction(payload.emoji, user)
                         return
-                raid.add_participant(user, str(payload.emoji))
+
+                added = raid.add_participant(user, emoji_str)
+                if not added:
+                    await message.remove_reaction(payload.emoji, user)
+                    await user.send(
+                        embed=ErrorEmbed(description="Ce rôle est déjà complet")
+                    )
+                    return
+
                 thread = channel.get_thread(message.id)
                 await thread.add_user(user)
+
             embed = raid.to_embed(self.bot.emoji_dict.get(payload.guild_id, []))
             await message.edit(embed=embed)
             update_raid_in_db(raid)
             logger.info(
-                f"User {user.name} added {payload.emoji} as reaction to raid {message.id}"
+                f"User {user.name} added {emoji_str} as reaction to raid {message.id}"
             )
 
     @commands.Cog.listener()
@@ -98,24 +114,14 @@ class RaidCog(commands.Cog):
         start_date="Raid date (YYYY-MM-DD)",
         start_time="Raid start time (HH:MM)",
         duration="Raid duration in hour (default: 1)",
-        max_participants="Max number of participants (if you want to override default max)",
     )
     @app_commands.choices(
         raid_name=[
-            Choice(name="Alzanor", value="Alzanor"),
-            Choice(name="Arma", value="Arma"),
-            Choice(name="Belial", value="Belial"),
-            Choice(name="Carno", value="Carno"),
-            Choice(name="Draco+Glacerus", value="DraGla"),
-            Choice(name="Erenia", value="Erenia"),
-            Choice(name="Fernon", value="Fernon"),
-            Choice(name="Glacerus", value="Glacerus"),
-            Choice(name="Kirollas", value="Kirollas"),
-            Choice(name="Laurena", value="Laurena"),
-            Choice(name="Paimon", value="Paimon"),
-            Choice(name="Pollutus", value="Pollutus"),
-            Choice(name="Valehir", value="Valehir"),
-            Choice(name="Zenas", value="Zenas"),
+            Choice(name="Hardcore A5", value="Hardcore A5"),
+            Choice(name="Hardcore A6", value="Hardcore A6"),
+            Choice(name="Hardcore A7", value="Hardcore A7"),
+            Choice(name="Hardcore A8", value="Hardcore A8"),
+            Choice(name="Fernon Hellbound", value="Fernon Hellbound"),
         ]
     )
     async def start_session(
@@ -125,14 +131,17 @@ class RaidCog(commands.Cog):
         start_date: str,
         start_time: str,
         duration: int = 1,
-        max_participants: int | None = None,
     ):
         """Start a new raid session with specified inputs"""
-        await interaction.response.send_message(f"Creating raid", ephemeral=True)
+        await interaction.response.send_message(
+            f"Creating raid {raid_name}", ephemeral=True
+        )
         role = discord.utils.get(
             interaction.channel.guild.roles,
-            name=f"Raideur {interaction.channel.category}",
+            name="Verified",
         )
+        if role is None:
+            role = discord.utils.get(interaction.channel.guild.roles, name="Raideur")
         start_date_obj = parse_date(start_date)
         start_time_obj = parse_time(start_time)
         if start_date_obj is None or start_time_obj is None:
@@ -146,8 +155,7 @@ class RaidCog(commands.Cog):
         message = await interaction.channel.send(
             content=role.mention + f"Nouvelle session {raid_name} en création"
         )
-        if not max_participants:
-            max_participants = RAID_TEMPLATES[raid_name]["max_participants"]
+        role_limits = RAID_TEMPLATES[raid_name]["role_limits"]
         logger.info(f"{interaction.user} created a new raid")
         new_raid = Raid(
             message=message,
@@ -159,7 +167,7 @@ class RaidCog(commands.Cog):
                 datetime.combine(start_date_obj, start_time_obj)
             ),
             duration=duration,
-            max_participants=max_participants,
+            role_limits=role_limits,
             participants={},
             guild_emojis=self.bot.emoji_dict.get(interaction.guild_id, []),
         )
@@ -171,10 +179,10 @@ class RaidCog(commands.Cog):
         self.bot.raids[message.id] = new_raid
 
         # bench_emoji = discord.PartialEmoji(name="bench", id=1097864481461260369)
+        await message.add_reaction("🛡️")
+        await message.add_reaction("❤️")
+        await message.add_reaction("💀")
         await message.add_reaction("⚔️")
-        await message.add_reaction("🏹")
-        await message.add_reaction("🧙")
-        await message.add_reaction("🤜")
         thread = await message.create_thread(
             name=f"Session {new_raid.raid_name} - {new_raid.start_datetime.strftime('%Y-%m-%d %H:%M')}"
         )
@@ -242,10 +250,10 @@ class RaidCog(commands.Cog):
     )
     @app_commands.choices(
         reaction=[
-            Choice(name="⚔️ Escri", value="⚔️"),
-            Choice(name="🏹 Archer", value="🏹"),
-            Choice(name="🧙 Mage", value="🧙"),
-            Choice(name="🤜 Artiste Martial", value="🤜"),
+            Choice(name="🛡️ Tank", value="🛡️"),
+            Choice(name="❤️ Healer", value="❤️"),
+            Choice(name="💀 Debuffer", value="💀"),
+            Choice(name="⚔️ DPS", value="⚔️"),
         ]
     )
     async def add_to_raid(
@@ -258,9 +266,9 @@ class RaidCog(commands.Cog):
             await interaction.response.defer(ephemeral=True, thinking=True)
             original_message_id = interaction.channel.id
             raid = self.bot.raids.get(original_message_id)
-            if len(raid.participants) >= raid.max_participants:
+            if not raid.has_room_for_role(reaction):
                 await interaction.followup.send(
-                    embed=ErrorEmbed(description=f"Raid is full")
+                    embed=ErrorEmbed(description="This role is already full")
                 )
                 return
             if user_to_add in raid.participants:

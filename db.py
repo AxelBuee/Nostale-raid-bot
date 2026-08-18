@@ -43,7 +43,7 @@ class RaidSQL(Base):
     raid_name = Column(String)
     start_datetime = Column(DateTime(timezone=True))
     duration = Column(Integer)
-    max_participants = Column(Integer)
+    role_limits = Column(JSON)
     participants = Column(JSON)
     nb_of_raids = Column(Integer)
     guild_id = Column(BigInteger)
@@ -55,7 +55,7 @@ class RaidSQL(Base):
         raid_name,
         start_datetime,
         duration,
-        max_participants,
+        role_limits,
         message_id,
         participants,
         nb_of_raids,
@@ -66,8 +66,8 @@ class RaidSQL(Base):
         self.raid_name: str = raid_name
         self.start_datetime: datetime.datetime = start_datetime
         self.duration: int = duration
+        self.role_limits: dict[str, int] = role_limits
         self.message_id = message_id
-        self.max_participants: int = max_participants
         self.participants: dict[int, dict[str, Any]] = participants
         self.nb_of_raids: int = nb_of_raids
         self.guild_id: int = guild_id
@@ -88,11 +88,16 @@ class RaidSQL(Base):
 
     async def to_raid(self, bot: commands.Bot):
         from models.raid import Raid
+        from templates.templates import RAID_TEMPLATES
 
         guild = bot.get_guild(self.guild_id)
         author = guild.get_member(self.author_id)
         message = await self.get_message(bot)
         participants = await self.recreate_participants(self.participants, guild)
+        # Fallback pour les raids créés avant la migration (role_limits absent en base)
+        role_limits = self.role_limits or RAID_TEMPLATES.get(self.raid_name, {}).get(
+            "role_limits", {}
+        )
         raid = Raid(
             message=message,
             raid_name=self.raid_name,
@@ -103,7 +108,7 @@ class RaidSQL(Base):
                 pytz.timezone("Europe/Paris")
             ),
             duration=self.duration,
-            max_participants=self.max_participants,
+            role_limits=role_limits,
             participants=participants,
             nb_of_raids=self.nb_of_raids,
         )
