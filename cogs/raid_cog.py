@@ -201,14 +201,17 @@ class RaidCog(commands.Cog):
             await interaction.response.defer(ephemeral=True, thinking=True)
             original_message_id = interaction.channel.id
             raid = self.bot.raids.get(original_message_id)
-            admin = discord.utils.get(interaction.guild.roles, name="Assistant/Gardien")
-            if (
-                interaction.user.id != raid.author.id
-                and admin not in interaction.user.roles
-            ):
+            admin = discord.utils.get(interaction.guild.roles, name="Admin")
+            lead = discord.utils.get(interaction.guild.roles, name="LEAD")
+
+            is_author = interaction.user.id == raid.author.id
+            is_admin = admin is not None and admin in interaction.user.roles
+            is_lead = lead is not None and lead in interaction.user.roles
+
+            if not (is_author or is_admin or is_lead):
                 await interaction.followup.send(
                     embed=ErrorEmbed(
-                        description=f"You are not the creator of this raid or have {admin.mention} role"
+                        description="You are not the creator of this raid, or don't have the required Admin or LEAD role"
                     )
                 )
                 return
