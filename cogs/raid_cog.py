@@ -224,6 +224,16 @@ class RaidCog(commands.Cog):
                     )
                     raid.remove_participant(user)
                     await interaction.channel.remove_user(user)
+                    try:
+                        await user.send(
+                            f"You've been removed from the raid **{raid.raid_name}** "
+                            f"starting on <t:{int(raid.start_datetime.timestamp())}:F>"
+                        )
+                    except discord.Forbidden:
+                        logger.warning(
+                            f"Could not DM {user.name} about removal from raid {raid.message.id} "
+                            f"(DMs disabled)"
+                        )
                     await interaction.edit_original_response(
                         content=f"{user.name} removed from raid"
                     )
