@@ -2,6 +2,7 @@ import asyncio
 from datetime import date, datetime, time
 from typing import List
 
+import discord
 import pytz
 from discord import Emoji
 from discord.ext import commands
@@ -20,31 +21,42 @@ async def load_raids_from_db(bot: commands.Bot):
         hour=0, minute=0, second=0, microsecond=0
     )
     raids_sql = (
-        session.query(RaidSQL).filter(RaidSQL.start_datetime >= today_start).all()
+        session.query(RaidSQL)
+        .filter(RaidSQL.start_datetime >= today_start)
+        .filter(RaidSQL.is_active)
+        .all()
     )
     bot_guild_ids = [guild.id for guild in bot.guilds]
-    to_raid_tasks = [
-        raid_sql.to_raid(bot=bot)
-        for raid_sql in raids_sql
-        if raid_sql.guild_id in bot_guild_ids
+    filtered_raids_sql = [
+        raid_sql for raid_sql in raids_sql if raid_sql.guild_id in bot_guild_ids
     ]
-    raids_list: List[Raid] = await asyncio.gather(*to_raid_tasks)
+    to_raid_tasks = [raid_sql.to_raid(bot=bot) for raid_sql in filtered_raids_sql]
+    results = await asyncio.gather(*to_raid_tasks, return_exceptions=True)
     session.close()
+
+    raids_list: List[Raid] = []
+    for raid_sql, result in zip(filtered_raids_sql, results, strict=True):
+        if isinstance(result, Exception):
+            logger.error(f"Failed to load raid {raid_sql.message_id} from DB: {result}")
+            continue
+        raids_list.append(result)
     return raids_list
 
 
 def delete_raid_from_db(raid: Raid):
     session = get_session()
-    raid = (
+    raid_sql = (
         session.query(RaidSQL)
         .filter_by(message_id=raid.message.id, channel_id=raid.channel_id)
         .first()
     )
-    if raid:
-        session.delete(raid)
+    if raid_sql:
+        session.delete(raid_sql)
         session.commit()
-        logger.info(f"Deleted raid {raid.message_id} from database")
+        logger.info(f"Deleted raid {raid_sql.message_id} from database")
+        session.close()
         return True
+    session.close()
     return False
 
 
@@ -87,3 +99,11 @@ def parse_time(time: str) -> time | None:
         except ValueError:
             pass
     return start_time_obj
+
+
+async def load_discord_file(path: str) -> discord.File:
+    def _read():
+        with open(path, "rb") as f:
+            return discord.File(f, filename=path.split("/")[-1])
+
+    return await asyncio.to_thread(_read)

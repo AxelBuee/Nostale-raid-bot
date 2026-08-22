@@ -2,13 +2,14 @@ import datetime
 import os
 from typing import Any
 
+import pytz
 from discord import Guild, Message, PartialMessage
 from discord.ext import commands
 from dotenv import load_dotenv
-import pytz
 from sqlalchemy import (
     JSON,
     BigInteger,
+    Boolean,
     Column,
     DateTime,
     Integer,
@@ -48,6 +49,8 @@ class RaidSQL(Base):
     nb_of_raids = Column(Integer)
     guild_id = Column(BigInteger)
     channel_id = Column(BigInteger)
+    thread_id = Column(BigInteger)
+    is_active = Column(Boolean, default=True)
 
     def __init__(
         self,
@@ -61,6 +64,8 @@ class RaidSQL(Base):
         nb_of_raids,
         guild_id,
         channel_id,
+        thread_id=None,
+        is_active=True,
     ):
         self.author_id: int = author_id
         self.raid_name: str = raid_name
@@ -72,6 +77,8 @@ class RaidSQL(Base):
         self.nb_of_raids: int = nb_of_raids
         self.guild_id: int = guild_id
         self.channel_id: int = channel_id
+        self.thread_id: int | None = thread_id
+        self.is_active: bool = is_active
 
     async def get_message(self, bot: commands.Bot) -> Message:
         channel = bot.get_channel(self.channel_id)
@@ -111,5 +118,6 @@ class RaidSQL(Base):
             role_limits=role_limits,
             participants=participants,
             nb_of_raids=self.nb_of_raids,
+            thread_id=self.thread_id,
         )
         return raid

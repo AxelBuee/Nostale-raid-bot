@@ -7,7 +7,6 @@ from discord import Colour, Embed, Emoji, Member, Message
 from db import RaidSQL
 from templates.templates import RAID_TEMPLATES
 
-
 PSP_LIST = [
     "akhenaton",
     "amon",
@@ -47,7 +46,8 @@ class Raid:
         role_limits: dict[str, int] | None = None,
         participants=None,
         nb_of_raids=0,
-        guild_emojis=[],
+        guild_emojis: List[Emoji] | None = None,
+        thread_id: int | None = None,
     ):
         self.author: Member = author
         self.raid_name: str = raid_name
@@ -60,6 +60,7 @@ class Raid:
         self.guild_id: int = guild_id
         self.channel_id: int = channel_id
         self.guild_emojis: List[Emoji] = guild_emojis
+        self.thread_id: int | None = thread_id
 
     @property
     def max_participants(self) -> int:
@@ -196,8 +197,8 @@ class Raid:
             ),
         )
         embed.add_field(
-            name=f"**__SESSION CANCELLED__**",
-            value=f"",
+            name="**__SESSION CANCELLED__**",
+            value="",
             inline=False,
         )
         return embed
@@ -237,6 +238,7 @@ class Raid:
             nb_of_raids=self.nb_of_raids,
             guild_id=self.guild_id,
             channel_id=self.channel_id,
+            thread_id=self.thread_id,
         )
 
     def get_role_participant_list(self, reaction_emoji: str) -> str:

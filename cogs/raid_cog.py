@@ -11,7 +11,7 @@ from models.error_embed import ErrorEmbed
 from models.raid import Raid
 from nostale_bot import NostaleRaidHelperBot
 from templates.templates import RAID_TEMPLATES
-from utils.utils import parse_date, parse_time, update_raid_in_db
+from utils.utils import load_discord_file, parse_date, parse_time, update_raid_in_db
 from views.raid_view import RaidView
 
 
@@ -35,10 +35,9 @@ class RaidCog(commands.Cog):
             current_emoji = raid.get_participant_emoji(user)
 
             if current_emoji == emoji_str:
-                return  # déjà inscrit avec ce rôle, rien à faire
+                return
 
             if current_emoji:
-                # L'utilisateur change de rôle : vérifie que le nouveau rôle a de la place
                 if not raid.has_room_for_role(emoji_str):
                     await message.remove_reaction(payload.emoji, user)
                     await user.send(
@@ -171,7 +170,7 @@ class RaidCog(commands.Cog):
             participants={},
             guild_emojis=self.bot.emoji_dict.get(interaction.guild_id, []),
         )
-        view = RaidView(raid=new_raid, bot=self.bot)
+        view = RaidView(bot=self.bot)
 
         embed = new_raid.to_embed(self.bot.emoji_dict.get(interaction.guild_id, []))
 
@@ -186,11 +185,11 @@ class RaidCog(commands.Cog):
         thread = await message.create_thread(
             name=f"Session {new_raid.raid_name} - {new_raid.start_datetime.strftime('%Y-%m-%d %H:%M')}"
         )
+        new_raid.thread_id = thread.id
         if RAID_TEMPLATES[raid_name].get("opt_images"):
             for img in RAID_TEMPLATES[raid_name]["opt_images"]:
-                with open(img, "rb") as f:
-                    image = discord.File(f)
-                    await thread.send(file=image)
+                image = await load_discord_file(img)
+                await thread.send(file=image)
         update_raid_in_db(new_raid)
         await interaction.edit_original_response(content="Raid fully created")
 
@@ -215,7 +214,7 @@ class RaidCog(commands.Cog):
                     )
                 )
                 return
-            for user in raid.participants.keys():
+            for user in raid.participants:
                 if user_to_rm.lower() in user.name.lower() or (
                     user.nick and user_to_rm.lower() in user.nick.lower()
                 ):
@@ -322,13 +321,13 @@ class RaidCog(commands.Cog):
             raid = self.bot.raids.get(original_message_id)
             if number_of_raids <= 0:
                 await interaction.followup.send(
-                    embed=ErrorEmbed(description=f"Number of raids should be > 0.")
+                    embed=ErrorEmbed(description="Number of raids should be > 0.")
                 )
                 return
             else:
                 raid.nb_of_raids = number_of_raids
                 update_raid_in_db(raid)
-                await interaction.followup.send(content=f"Raid result updated")
+                await interaction.followup.send(content="Raid result updated")
                 await raid.message.edit(
                     embed=raid.to_embed(
                         self.bot.emoji_dict.get(interaction.guild_id, [])
