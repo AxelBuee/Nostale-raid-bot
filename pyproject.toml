@@ -1,0 +1,19 @@
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+
+[tool.ruff.lint]
+select = [
+    "E",    # erreurs pycodestyle
+    "F",    # erreurs pyflakes (imports inutilisés, variables non définies, etc.)
+    "I",    # tri des imports (remplace isort)
+    "ASYNC", # détecte les appels bloquants dans du code async (ex: open() qu'on a corrigé)
+    "SIM",  # simplifications de code (ex: le .keys() qu'on a corrigé)
+    "B",    # bugbear, détecte des pièges Python courants
+]
+ignore = [
+    "E501",  # ligne trop longue — laissé au formatter plutôt qu'en erreur bloquante
+]
+
+[tool.ruff.format]
+quote-style = "double"
